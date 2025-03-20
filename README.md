@@ -72,7 +72,9 @@ return {
 ```
 
 ## Usage
-* Open the lists manager using the command `:HarpoonLists`
+* Open the lists manager:
+  * Using the command `:HarpoonLists`
+  * Using a function call `harpoonLists:open_manager()`
 * In-manager normal mode keymaps:
   * `<CR>`	Select a list to use
   * `n`		Create a new list
