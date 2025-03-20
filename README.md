@@ -69,4 +69,12 @@ return {
 		vim.keymap.set("n", "<leader>hn", function() harpoonLists:list():next({ui_nav_wrap = true}) end, { desc = "Go to next buffer in Harpoon list" })
 	end
 }
-```  
+```
+
+## Usage
+* Open the lists manager using the command `:HarpoonLists`
+* In-manager normal mode keymaps:
+  * `<CR>`	Select a list to use
+  * `n`		Create a new list
+  * `d`		Delete the list at cursor line
+  * `q`/`<Esc>`	Close the manager
