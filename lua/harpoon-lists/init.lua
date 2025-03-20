@@ -15,7 +15,7 @@ end
 
 function HarpoonLists:setup()
 	vim.api.nvim_create_user_command(
-		"ChefHarpoon",
+		"HarpoonLists",
 		function()
 			local screenWidth = vim.api.nvim_get_option("columns")
 			local screenHeight = vim.api.nvim_get_option("lines")
@@ -47,7 +47,7 @@ function HarpoonLists:setup()
 				vim.api.nvim_buf_set_option(buf, "modifiable", true)
 				vim.api.nvim_buf_set_lines(buf, 0, -1, false, listNames)
 
-				local ns_id = vim.api.nvim_create_namespace("ChefHarpoonList")
+				local ns_id = vim.api.nvim_create_namespace("HarpoonListsNamespace")
 				if self.currentList ~= nil then
 					vim.api.nvim_buf_set_extmark(buf, ns_id, 0, 0, {
 						end_row = 1,
