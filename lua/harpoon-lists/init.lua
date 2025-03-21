@@ -13,6 +13,67 @@ function HarpoonLists:new()
 	}, self)
 end
 
+local function loadLists(buf, harpoonLists)
+	local listsKey = harpoonLists.harpoon.config.settings.key()
+	local lists = harpoonLists.harpoon.data._data[listsKey] or {}
+	local listNames = {}
+	local i = 1
+	for listName, _ in pairs(lists) do
+		listNames[i] = listName
+		i = i + 1
+	end
+	if harpoonLists.currentList ~= nil then
+		for index, name in ipairs(listNames) do
+			if name == harpoonLists.currentList then
+				table.remove(listNames, index)
+				table.insert(listNames, 1, harpoonLists.currentList)
+				break
+			end
+		end
+	end
+
+	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, listNames)
+
+	local ns_id = vim.api.nvim_create_namespace("HarpoonListsNamespace")
+	if harpoonLists.currentList ~= nil then
+		vim.api.nvim_buf_set_extmark(buf, ns_id, 0, 0, {
+			end_row = 1,
+			hl_group = "Error",
+			virt_text = { { "(Current)", "Comment" } },
+			virt_text_pos = "eol",
+		})
+	end
+
+	vim.api.nvim_buf_set_option(buf, "modifiable", false)
+
+	return listNames
+end
+
+local function delete_list(managerData, harpoonLists)
+	local listNamesIndex = vim.api.nvim_win_get_cursor(0)[1]
+	local listName = managerData.listNames[listNamesIndex]
+	if listName == HARPOON_DEFAULT_LIST then
+		vim.print("Cannot delete default list")
+		return
+	end
+	if listName == harpoonLists.currentList then
+		harpoonLists.currentList = HARPOON_DEFAULT_LIST
+	end
+
+	-- Get the up to date current lists
+	local listsKey = harpoonLists.harpoon.config.settings.key()
+	local lists1 = harpoonLists.harpoon.data._data[listsKey] or {}
+	local lists2 = harpoonLists.harpoon.lists[listsKey] or {}
+	-- Remove the list that was selected for deletion
+	lists1[listName] = nil
+	lists2[listName] = nil
+
+	harpoonLists.harpoon:sync()
+	managerData.listNames = loadLists(managerData.buf, harpoonLists)
+	vim.api.nvim_buf_set_option(managerData.buf, "modifiable", false)
+end
+
 function HarpoonLists:open_manager()
 	local screenWidth = vim.api.nvim_get_option("columns")
 	local screenHeight = vim.api.nvim_get_option("lines")
@@ -21,45 +82,12 @@ function HarpoonLists:open_manager()
 	vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
 	vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
 
-	local listsKey = self.harpoon.config.settings.key()
+	local listNames = loadLists(buf, self)
 
-	local loadLists = function()
-		local lists = self.harpoon.data._data[listsKey] or {}
-		local listNames = {}
-		local i = 1
-		for listName, _ in pairs(lists) do
-			listNames[i] = listName
-			i = i + 1
-		end
-		if self.currentList ~= nil then
-			for index, name in ipairs(listNames) do
-				if name == self.currentList then
-					table.remove(listNames, index)
-					table.insert(listNames, 1, self.currentList)
-					break
-				end
-			end
-		end
-
-		vim.api.nvim_buf_set_option(buf, "modifiable", true)
-		vim.api.nvim_buf_set_lines(buf, 0, -1, false, listNames)
-
-		local ns_id = vim.api.nvim_create_namespace("HarpoonListsNamespace")
-		if self.currentList ~= nil then
-			vim.api.nvim_buf_set_extmark(buf, ns_id, 0, 0, {
-				end_row = 1,
-				hl_group = "Error",
-				virt_text = { { "(Current)", "Comment" } },
-				virt_text_pos = "eol",
-			})
-		end
-
-		vim.api.nvim_buf_set_option(buf, "modifiable", false)
-
-		return listNames
-	end
-
-	local listNames = loadLists()
+	local managerData = {
+		buf = buf,
+		listNames = listNames,
+	}
 
 	local win = vim.api.nvim_open_win(buf, true, {
 		relative = "editor",
@@ -75,7 +103,7 @@ function HarpoonLists:open_manager()
 
 	-- Choose list and close window
 	vim.keymap.set("n", "<CR>", function()
-		self.currentList = listNames[vim.api.nvim_win_get_cursor(0)[1]]
+		self.currentList = managerData.listNames[vim.api.nvim_win_get_cursor(0)[1]]
 		vim.api.nvim_win_close(win, true)
 	end, { buffer = buf, noremap = true, silent = true })
 
@@ -89,26 +117,7 @@ function HarpoonLists:open_manager()
 
 	-- Delete list and update list names
 	vim.keymap.set("n", "d", function()
-		local listNamesIndex = vim.api.nvim_win_get_cursor(0)[1]
-		local listName = listNames[listNamesIndex]
-		if listName == HARPOON_DEFAULT_LIST then
-			vim.print("Cannot delete default list")
-			return
-		end
-		if listName == self.currentList then
-			self.currentList = HARPOON_DEFAULT_LIST
-		end
-
-		-- Get the up to date current lists
-		local lists1 = self.harpoon.data._data[listsKey] or {}
-		local lists2 = self.harpoon.lists[listsKey] or {}
-		-- Remove the list that was selected for deletion
-		lists1[listName] = nil
-		lists2[listName] = nil
-
-		self.harpoon:sync()
-		listNames = loadLists()
-		vim.api.nvim_buf_set_option(buf, "modifiable", false)
+		delete_list(managerData, self)
 	end, { buffer = buf, noremap = true, silent = true })
 
 	-- Close window
