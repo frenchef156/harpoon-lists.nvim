@@ -6,6 +6,11 @@
 ## What is it for?
 When working on multiple tasks on the same code base, each tasks requires a different set of files at hand. This plugin wraps **Harpoon** and adds list management.
 
+
+https://github.com/user-attachments/assets/2f29c04a-f872-4579-aef5-94308a239cd7
+
+
+
 ## Installation
 * Install using your favorite plugin manager. Preferably, install using [lazy.nvim](https://github.com/folke/lazy.nvim). Make sure to include the dependencies.
 ```lua
